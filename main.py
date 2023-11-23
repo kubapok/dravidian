@@ -43,6 +43,7 @@ def compute_metrics(p):
         for prediction, label in zip(predictions, labels)
     ]
 
+    import pdb; pdb.set_trace()
     results = seqeval.compute(predictions=true_predictions, references=true_labels)
     return {
         "precision": results["overall_precision"],
@@ -128,11 +129,12 @@ training_args = TrainingArguments(
     learning_rate=2e-5,
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
-    num_train_epochs=2,
+    num_train_epochs=10,
     weight_decay=0.01,
     evaluation_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,
+    report_to=None
 )
 
 trainer = Trainer(

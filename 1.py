@@ -1,4 +1,3 @@
-
 import evaluate
 import numpy as np
 from datasets import load_dataset, Sequence,ClassLabel
@@ -46,6 +45,7 @@ def compute_metrics(p):
         for prediction, label in zip(predictions, labels)
     ]
 
+    #import pdb; pdb.set_trace()
     results = seqeval.compute(predictions=true_predictions, references=true_labels)
     return {
         "precision": results["overall_precision"],
@@ -71,22 +71,30 @@ label2id = {
 
 
 from datasets import Dataset
+from get_data_dict import get_data_dict
 
 
-wnut = load_dataset("wnut_17")
+model_name = 'xlm-roberta-large'
+model_name= 'microsoft/mdeberta-v3-base'
+model_name = 'xlm-roberta-base'
+model_name = "distilbert-base-uncased"
+num_epochs=20
 
+
+tokens_list, labels_list = get_data_dict()
 ds = Dataset.from_dict({"tokens": [['a','b','c'], ['a','e']], "ner_tags": [['0','0','1'], ['1','0']]})
-#ds.features['ner_tags'].feature.names = ['0','1']
+ds = Dataset.from_dict({"tokens": tokens_list, "ner_tags": labels_list})
 ner_tags_class_label = Sequence(ClassLabel(num_classes=2, names = ['0','1']))
 ds  = ds.cast_column('ner_tags', ner_tags_class_label)
-ds = ds.train_test_split()
+ds = ds.train_test_split(seed=123)
 wnut = ds
 
 #label_list = wnut["train"].features[f"ner_tags"].feature.names
 label_list = ['0','1']
+label_list = ['O','B']
 
 
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 example = wnut["train"][0]
 tokenized_input = tokenizer(example["tokens"], is_split_into_words=True)
@@ -103,20 +111,22 @@ seqeval = evaluate.load("seqeval")
 labels = [label_list[i] for i in example[f"ner_tags"]]
 
 model = AutoModelForTokenClassification.from_pretrained(
-    "distilbert-base-uncased", num_labels=2, id2label=id2label, label2id=label2id
+    model_name, num_labels=2, id2label=id2label, label2id=label2id
 )
 
+model_save_path = 'dravidian_model_' + model_name
 training_args = TrainingArguments(
-    output_dir="my_awesome_wnut_model",
+    output_dir=model_save_path,
     learning_rate=2e-5,
-    per_device_train_batch_size=16,
-    per_device_eval_batch_size=16,
-    num_train_epochs=2,
+    per_device_train_batch_size=64,
+    per_device_eval_batch_size=64,
+    num_train_epochs=num_epochs,
     weight_decay=0.01,
     evaluation_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,
-    report_to=None
+    report_to=None,
+    metric_for_best_model='eval_f1'
 )
 
 trainer = Trainer(
@@ -131,8 +141,14 @@ trainer = Trainer(
 
 
 trainer.train()
+trainer.save_model()
 
-text = "The Golden State Warriors are an American professional basketball team based in San Francisco."
+print('final model eval f1', trainer.evaluate(trainer.eval_dataset)['eval_f1'])
 
-classifier = pipeline("ner", model="stevhliu/my_awesome_wnut_model")
-classifier(text)
+text = 'ಬ್ರೋ ಅವರು ಗೆ ದೇಶದ ಬಗ್ಗೆ ಅಭಿಮಾನ ಇಲ್ಲಾ ಬಿಡಿ'
+text = 'ದೇಶಧ್ರೋಹಿಗಳು ಡಿಸ್ ಲೈಕ್ ಮಾಡಿದರೆ ನೀವು ನಿಜವಾದ ದೇಶ ದ್ರೋಹಿಗಳು ನಾಚಿಕೆ ಆಗಬೇಕು ನಿಮ್ಮ ಜನ್ಮಕ್ಕೆ.... ಇಂತಹ ಅದ್ಭುತವಾದ ವಿಡಿಯೋ ಗಳಿಗೂ ಡಿಸ್ ಲೈಕ್  ಮಾಡಿದ್ರಲ್ಲ ನಿಮಗೆ ನಾಚಿಕೆ ಆಗಲ್ವಾ.....:'
+classifier = pipeline("ner", model=f"./{model_save_path}/")
+
+out = classifier(text)
+print(out)
+# a co jak będzie puste?
