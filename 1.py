@@ -74,10 +74,12 @@ from datasets import Dataset
 from get_data_dict import get_data_dict
 
 
+model_name = "distilbert-base-uncased"
+model_name = 'xlm-roberta-base'
+
+# te 2 są najlepsze
 model_name = 'xlm-roberta-large'
 model_name= 'microsoft/mdeberta-v3-base'
-model_name = 'xlm-roberta-base'
-model_name = "distilbert-base-uncased"
 num_epochs=20
 
 
@@ -143,7 +145,9 @@ trainer = Trainer(
 trainer.train()
 trainer.save_model()
 
+print(model_name)
 print('final model eval f1', trainer.evaluate(trainer.eval_dataset)['eval_f1'])
+
 
 text = 'ಬ್ರೋ ಅವರು ಗೆ ದೇಶದ ಬಗ್ಗೆ ಅಭಿಮಾನ ಇಲ್ಲಾ ಬಿಡಿ'
 text = 'ದೇಶಧ್ರೋಹಿಗಳು ಡಿಸ್ ಲೈಕ್ ಮಾಡಿದರೆ ನೀವು ನಿಜವಾದ ದೇಶ ದ್ರೋಹಿಗಳು ನಾಚಿಕೆ ಆಗಬೇಕು ನಿಮ್ಮ ಜನ್ಮಕ್ಕೆ.... ಇಂತಹ ಅದ್ಭುತವಾದ ವಿಡಿಯೋ ಗಳಿಗೂ ಡಿಸ್ ಲೈಕ್  ಮಾಡಿದ್ರಲ್ಲ ನಿಮಗೆ ನಾಚಿಕೆ ಆಗಲ್ವಾ.....:'
