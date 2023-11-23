@@ -1,4 +1,5 @@
 import evaluate
+import sys
 import numpy as np
 from datasets import load_dataset, Sequence,ClassLabel
 from transformers import DataCollatorForTokenClassification
@@ -74,13 +75,18 @@ from datasets import Dataset
 from get_data_dict import get_data_dict
 
 
-model_name = "distilbert-base-uncased"
-model_name = 'xlm-roberta-base'
+model_name = "distilbert-base-uncased" # 0.653
+model_name = 'xlm-roberta-base' 
 
 # te 2 są najlepsze
-model_name = 'xlm-roberta-large'
-model_name= 'microsoft/mdeberta-v3-base'
-num_epochs=20
+model_name = 'xlm-roberta-large' # 0.668
+model_name= 'microsoft/mdeberta-v3-base' # 0.68
+model_name= 'l3cube-pune/malayalam-bert' # 0.666
+model_name= 'l3cube-pune/kannada-bert' # 0.673
+model_name = 'Twitter/twhin-bert-large' # 0.683
+
+model_name=sys.argv[1]
+num_epochs=2
 
 
 tokens_list, labels_list = get_data_dict()
@@ -128,7 +134,8 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     load_best_model_at_end=True,
     report_to=None,
-    metric_for_best_model='eval_f1'
+    metric_for_best_model='eval_f1',
+    warmup_ratio=0.1
 )
 
 trainer = Trainer(
@@ -154,5 +161,24 @@ text = 'ದೇಶಧ್ರೋಹಿಗಳು ಡಿಸ್ ಲೈಕ್ ಮಾಡ
 classifier = pipeline("ner", model=f"./{model_save_path}/")
 
 out = classifier(text)
-print(out)
-# a co jak będzie puste?
+#print(out)
+
+with open('../data/kannada_test_EACL24.csv', encoding='utf-8-sig') as f:
+    lines = [x.rstrip('\n') for x in  f.readlines()]
+
+out_lines = list()
+for line in lines:
+    out = classifier(line)
+    try:
+        start = out[0]['start']
+        end = out[-1]['end']
+        l = [i for i in range(start, end)]
+    except IndexError:
+        l = []
+    l = str(l).replace(" ","")
+    out_lines.append(l)
+
+with open('kubapok_span_supervised.csv','w', encoding='utf-8-sig') as f:
+    f.write('Text,Span\n')
+    for line, out_line in zip(lines, out_lines):
+        f.write(line+','+'"'+out_line+'"\n')
