@@ -7,6 +7,7 @@ from transformers import AutoTokenizer
 from transformers import pipeline
 from transformers import AutoModelForTokenClassification, TrainingArguments, Trainer
 import os 
+import pickle
 
 os.environ['WANDB_DISABLED'] = 'true'
 
@@ -79,14 +80,18 @@ model_name = "distilbert-base-uncased" # 0.653
 model_name = 'xlm-roberta-base' 
 
 # te 2 są najlepsze
-model_name = 'xlm-roberta-large' # 0.668
-model_name= 'microsoft/mdeberta-v3-base' # 0.68
 model_name= 'l3cube-pune/malayalam-bert' # 0.666
+
+
+
+
+model_name= 'microsoft/mdeberta-v3-base' # 0.68
 model_name= 'l3cube-pune/kannada-bert' # 0.673
 model_name = 'Twitter/twhin-bert-large' # 0.683
+model_name = 'xlm-roberta-large' # 0.668
 
 model_name=sys.argv[1]
-num_epochs=2
+num_epochs=30
 
 
 tokens_list, labels_list = get_data_dict()
@@ -94,7 +99,9 @@ ds = Dataset.from_dict({"tokens": [['a','b','c'], ['a','e']], "ner_tags": [['0',
 ds = Dataset.from_dict({"tokens": tokens_list, "ner_tags": labels_list})
 ner_tags_class_label = Sequence(ClassLabel(num_classes=2, names = ['0','1']))
 ds  = ds.cast_column('ner_tags', ner_tags_class_label)
-ds = ds.train_test_split(seed=123)
+#seed = 123
+seed = int(sys.argv[2])
+ds = ds.train_test_split(seed=seed)
 wnut = ds
 
 #label_list = wnut["train"].features[f"ner_tags"].feature.names
@@ -135,7 +142,7 @@ training_args = TrainingArguments(
     load_best_model_at_end=True,
     report_to=None,
     metric_for_best_model='eval_f1',
-    warmup_ratio=0.1
+    warmup_ratio=0.1,
 )
 
 trainer = Trainer(
@@ -175,10 +182,15 @@ for line in lines:
         l = [i for i in range(start, end)]
     except IndexError:
         l = []
-    l = str(l).replace(" ","")
     out_lines.append(l)
 
-with open('kubapok_span_supervised.csv','w', encoding='utf-8-sig') as f:
+with open(f'kubapok_span_supervised-{model_name.replace("/","-")}.csv','w', encoding='utf-8-sig') as f:
     f.write('Text,Span\n')
     for line, out_line in zip(lines, out_lines):
-        f.write(line+','+'"'+out_line+'"\n')
+        out_line_str = str(line).replace(" ","")
+
+        f.write(line+','+'"'+out_line_str+'"\n')
+
+
+with open(f'ensemble_part_span_supervised-{model_name.replace("/","-")}.pkl','wb') as f:
+    pickle.dump(out_lines,f)

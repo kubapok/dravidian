@@ -1,0 +1,1 @@
+TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 ipython  1.py  'microsoft/mdeberta-v3-base' 123 && TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 ipython  1.py 'Twitter/twhin-bert-large'  124
